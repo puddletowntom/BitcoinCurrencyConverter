@@ -13,7 +13,7 @@ from typing import Optional
 import requests
 
 
-COINDESK_URL = "https://api.coindesk.com/v1/bpi/currentprice.json"
+BLOCKCHAIN_API = "https://blockchain.info/ticker"
 CURRENCY_NAMES = {
     "USD": "United States Dollar",
     "GBP": "British Pound Sterling",
@@ -41,31 +41,36 @@ CURRENCY_NAMES = {
     "ZAR": "South African Rand",
 }
 
+CURRENCY_SYMBOLS = {
+    "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥",
+    "BRL": "R$", "CAD": "C$", "CNY": "¥", "KRW": "₩",
+    "INR": "₹", "MXN": "Mex$", "RUB": "₽", "ZAR": "R",
+    "ARS": "$", "AUD": "A$", "CLP": "$", "COP": "$",
+    "DKK": "kr", "HKD": "HK$", "ILS": "₪", "ISK": "kr",
+    "KRW": "₩", "NOK": "kr", "NZD": "NZ$", "PEN": "S/",
+    "PHP": "₱", "PLN": "zł", "SEK": "kr", "SGD": "S$",
+    "THB": "฿", "TWD": "NT$", "UYU": "$U", "VEF": "Bs",
+}
+
 
 def fetch_rates() -> dict:
-    """Fetch current Bitcoin price index from CoinDesk."""
-    resp = requests.get(COINDESK_URL, timeout=10)
+    """Fetch current BTC/fiat rates from Blockchain.info."""
+    resp = requests.get(BLOCKCHAIN_API, timeout=10)
     resp.raise_for_status()
     return resp.json()
 
 
-def get_rate(bpi: dict, currency: str) -> Optional[float]:
-    """Extract the rate for a given currency code from the BPI data."""
-    info = bpi.get(currency.upper())
+def get_rate(ticker: dict, currency: str) -> Optional[float]:
+    """Extract the last (sell) rate for a given currency code."""
+    info = ticker.get(currency.upper())
     if info is None:
         return None
-    rate_str = info["rate"].replace(",", "")
-    return float(rate_str)
+    return float(info["last"])
 
 
 def format_output(amount: float, currency: str, converted: float, rate: float) -> str:
     """Format the conversion result for display."""
-    symbols = {
-        "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥",
-        "BRL": "R$", "CAD": "C$", "CNY": "¥", "KRW": "₩",
-        "INR": "₹", "MXN": "Mex$", "RUB": "₽", "ZAR": "R",
-    }
-    sym = symbols.get(currency, "")
+    sym = CURRENCY_SYMBOLS.get(currency, "")
     return (
         f"  {amount:.8f} BTC = {sym}{converted:,.2f} {currency}\n"
         f"  Rate: 1 BTC = {sym}{rate:,.2f} {currency}"
@@ -109,14 +114,13 @@ def main() -> None:
         print(f"Error fetching rates: {e}", file=sys.stderr)
         sys.exit(1)
 
-    rate = get_rate(data["bpi"], currency)
+    rate = get_rate(data, currency)
     if rate is None:
         print(f"Error: rate not available for {currency}", file=sys.stderr)
         sys.exit(1)
 
     converted = args.amount * rate
     print(format_output(args.amount, currency, converted, rate))
-    print(f"\n  Updated: {data['time']['updated']}")
 
 
 if __name__ == "__main__":
