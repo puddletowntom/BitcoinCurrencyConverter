@@ -5,7 +5,7 @@ A Bitcoin to fiat currency converter that fetches real-time exchange rates using
 ## Features
 
 - Convert Bitcoin (BTC) to major fiat currencies (USD, EUR, GBP, JPY, etc.)
-- Real-time exchange rates via CoinDesk API
+- Real-time exchange rates via Blockchain.info API
 - Simple CLI interface
 
 ## Usage
